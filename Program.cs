@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.Serialization;
 using System.Threading.Tasks;
 using Refit;
 using Serilog;
@@ -17,8 +18,10 @@ namespace LogginExample
 
             try
             {
-                var gitHubApi = RestService.For<IGitHubApi>("https://api.github.com");
-                var octocat = await gitHubApi.GetUser("nonexistinguser");
+                ThrowValidationApiException();
+
+                //await ThrowApiException();
+
             }
             catch (ValidationApiException ex)
             {
@@ -30,6 +33,33 @@ namespace LogginExample
             }
 
             Console.WriteLine("Hello World!");
+        }
+
+        static void ThrowValidationApiException()
+        {
+            var expectedProblemDetails = new ProblemDetails
+            {
+                Detail = "detail",
+                Instance = "instance",
+                Status = 1,
+                Title = "title",
+                Type = "type"
+            };
+
+            var exc = (ValidationApiException)FormatterServices.GetUninitializedObject(typeof(ValidationApiException));
+
+            var prop = exc.GetType().GetProperty(nameof(ValidationApiException.Content), typeof(ProblemDetails));
+
+            prop.SetValue(exc, expectedProblemDetails);
+
+            throw exc;
+        }
+
+        static async Task ThrowApiException()
+        {
+
+            var gitHubApi = RestService.For<IGitHubApi>("https://api.github.com");
+            var octocat = await gitHubApi.GetUser("nonexistinguser");
         }
     }
 
